@@ -35,7 +35,7 @@ def main(args):
         print "checking point %s %s" %(request_lat, request_lon)
 
         # search for venues
-        venue_list = client.venues.search(params={'ll' : request_lon+','+request_lat})    
+        venue_list = client.venues.search(params={'ll' : request_lon+','+request_lat, })    
 
         for venue in venue_list['venues']:
             fsq_id = venue['id']
@@ -58,7 +58,7 @@ def main(args):
             #     print category['name']    
 
             try:
-                insert_venue = 'INSERT OR IGNORE INTO fsq_venues (fsq_id, name, Geometry) VALUES ("%s","{%s}", GeomFromText("POINT(%s %s)"));' %(fsq_id, name, lon, lat)
+                insert_venue = 'INSERT OR IGNORE INTO fsq_venues (fsq_id, name, Geometry) VALUES ("%s","%s", GeomFromText("POINT(%s %s)"));' %(fsq_id, name, lon, lat)
                 #print insert_venue
                 cur.execute(insert_venue)
                 conn.commit()
