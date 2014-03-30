@@ -6,6 +6,7 @@ from pyspatialite import dbapi2 as db
 import sys
 import argparse
 import json
+from datetime import datetime
 
 def main(args):
 
@@ -37,8 +38,8 @@ def main(args):
         print "checking point %s %s" %(request_lat, request_lon)
 
         # generate timestamp and request_id
-        request_id = "2014-03-22"
-        timestamp = "2014-03-22"
+        request_id = datetime.now().strftime("%Y-%m-%dT%H:00")
+        timestamp = datetime.now().isoformat()
 
         # search for venues
         venue_list = client.venues.search(params={'ll' : request_lon+','+request_lat}) 
