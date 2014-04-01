@@ -22,8 +22,10 @@ def main(args):
     parser = argparse.ArgumentParser()
     parser.add_argument("--aoi", dest="aoi")
     parser.add_argument("--maxpoints", dest="maxpoints")
+    parser.add_argument("--out", dest="outfile_json")
     parsed = parser.parse_args(args)
     maxpoints = int(parsed.maxpoints)
+    outfile_json = parsed.outfile_json
 
     # read env variables
     client_id = os.environ['CLIENT_ID']
@@ -54,6 +56,7 @@ def main(args):
     start_point = True
     foursquare_request = 0
     double_hash = 0
+    crawled_venues = Set()
 
     while len(points_done)<maxpoints:
         print "level: %s, points_thislevel: %s, points_done: %s, radius: %s" %(p, len(points_thislevel), len(points_done), radius)
@@ -63,6 +66,7 @@ def main(args):
             shift = False
         points_nextlevel = [] # reset to 0
         for k in points_thislevel:
+            next_iteration=True
             if (start_point==True): # special case for first loop
                 points_nextlevel = draw_hexagon(Point(k), radius, shift)
                 points_done = []
@@ -76,22 +80,69 @@ def main(args):
             else:
                 points_nextlevel_temp = draw_hexagon(Point(k), radius, shift) # draw hexagons around points_thislevel
                 for j in points_nextlevel_temp:
+                    print j
                     # create hash from j and compare with points_done_hashes
                     hashstring = "%.4f %.4f" %(j[0], j[1])
                     h = hashstring
                     if h in points_done_hashes:
                         double_hash = double_hash + 1
-                        #print "duplicate %s %s" %(double_hash, hashstring)
+                        print "duplicate %s, %s" %(double_hash, h)
                     else:
+                        venue_list_length = 0
+                        venues_relevant_length = 0
+                        new_venues = 0
+                        maximum_distance = 0
+                        next_radius = (radius/2)*math.sqrt(3)
+                        #next_radius = radius
                         if Point(j).within(area):
-                            request_lon = str(j[0])
-                            request_lat = str(j[1])
-                            print "making request"
-                            #venue_list = client.venues.search(params={'ll' : request_lon+','+request_lat})
-                            
-                            points_done_hashes.add(h)
-                            points_nextlevel.append(j)
+                            request_lon = str(j[1])
+                            request_lat = str(j[0])
+                            venue_list = client.venues.search(params={'ll' : request_lon+','+request_lat})
                             foursquare_request = foursquare_request + 1
+                            venue_list_length = len(venue_list['venues'])
+                            print "request returned %s venues" %(venue_list_length)
+                            if venue_list_length==30:
+                                dist=[]
+                                # filter only relevant venues
+                                #for venue in venue_list if venue['stats']['checkinsCount']>4:
+                                #        venues_relevant.append(venue)
+                                #venues_relevant = (venue for venue in venue_list if int(venue['stats']['checkinsCount'])>4)
+                                #type(venues_relevant)
+                                #venues_relevant_length = sum(1 for venue in venues_relevant)
+                                for venue in venue_list['venues']:
+                                    lat = venue['location']['lat']
+                                    lon = venue['location']['lng']
+                                    dist.append(Point(j).distance(Point(lon, lat)))
+                                    if venue['id'] not in crawled_venues:
+                                        new_venues = new_venues + 1
+                                        if venue['stats']['checkinsCount']>4:
+                                            venues_relevant_length = venues_relevant_length +1
+                                            crawled_venues.add(venue['id'])
+                                maximum_distance = max(dist)
+                                if maximum_distance>next_radius:
+                                    next_iteration=False
+                                #print "maximum distance: %s, search radius: %s, new venues: %s, next iteration: %s" %(max(dist), next_radius, new_venues, next_iteration)
+                            else:
+                                next_iteration=False
+                                #print "next iteration: %s" %(next_iteration)
+                            #next_iteration = True
+                            if new_venues==0:
+                                next_iteration=False
+                                print "no new venues"
+                            points_done_hashes.add(h)
+                        else:
+                            print "point outside AOI"
+                        if next_iteration:
+                            points_nextlevel.append(j)
+                        print "level %s" %(p)
+                        #print "point %s of %s" %()
+                        print "search radius for next run: %s" %(next_radius)
+                        print "returned venues: %s" %(venue_list_length)
+                        print "relevant venues: %s" %(venues_relevant_length)
+                        print "new venues: %s" %(new_venues)
+                        print "maximum distance: %s" %(maximum_distance)
+                        print "next iteration %s" %(next_iteration)
+                        print "----------------"
                     h=""
 
         for i in points_nextlevel:
@@ -107,8 +158,13 @@ def main(args):
     m = MultiPoint(points_done)
     #print foursquare_request
     #print "%s duplicates" %(double_hash)
-    print m
-    print len(points_done)
+    #print m
+    #print(json.dumps(mapping(m)))
+    with open(outfile_json, 'w') as outfile:
+        json.dump(mapping(m), outfile)
+    print "%s foursquare requests sent" %(foursquare_request)
+    print "%s venues crawled" %(len(crawled_venues))
+    #print len(points_done)
     #for i in points_done:
     #    print "%.4f %.4f" %(i[0], i[1])
     
