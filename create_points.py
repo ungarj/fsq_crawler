@@ -10,13 +10,15 @@ import json
 from shapely.geometry import *
 from shapely import affinity
 import math
+import time
+import numpy
 
 def main(args):
     parser = argparse.ArgumentParser()
     parser.add_argument("--aoi", dest="aoi")
     parser.add_argument("--maxpoints", dest="maxpoints")
     parsed = parser.parse_args(args)
-    maxpoints = parsed.maxpoints
+    maxpoints = int(parsed.maxpoints)
 
     # read env variables
     #client_id = os.environ['CLIENT_ID']
@@ -38,59 +40,71 @@ def main(args):
     tb = Point(center.x,bbox[1])
     len_a = center.distance(ta)
     len_b = center.distance(tb)
-    radius = max(len_a,len_b)/2
+    radius = max(len_a,len_b)
     
-    # draw first hexagon --> results in 6+1 points
-    points_start = []
-    points_start.append(center)
-    points_hexagon = draw_hexagon(center, radius)
-    points_start.extend(points_hexagon)
+    p=0
+    points_thislevel=[] # points processed in current level
+    points_thislevel.append(center) # initialized with center point
+    points_nextlevel=[] # points to be processed in next loop: no doubles, within area and min distance
+    points_done = [] # for every run, get appended by points_nextlevel
+    start_point = True
+    foursquare_request = 0
 
-    points_done = []
-    points_todo = []
-
-    for i in points_start:
-        ## check_doubles
-
-        ## check_within
-        if Point(i).within(area):
-            points_todo.append(i)
-    ## true --> points todo
-
-    points_total = []
-    maxlevel = 2
-    l=0
-    points_thislevel = points_todo
-    points_nextlevel=[]
-
-    while l<maxlevel:
-        radius = radius/2
+    while len(points_done)<maxpoints:
+        print "level: %s, points_nextlevel: %s, points_done: %s, radius: %s" %(p, len(points_nextlevel), len(points_done), radius)
+        if p % 2 == 0:
+            shift = True
+        else:
+            shift = False
+        print shift
+        points_nextlevel_all = []
+        points_nextlevel = [] # reset to 0
         for k in points_thislevel:
-            points_temp = draw_hexagon(Point(k), radius)
-            for j in points_temp:
-                if Point(j).within(area):
+            if (start_point==True): # special case for first loop
+                points_nextlevel = draw_hexagon(Point(k), radius, shift)
+                points_done = points_thislevel
+                start_point = False
+            else:
+                points_nextlevel_temp = draw_hexagon(Point(k), radius, shift) # draw hexagons around points_thislevel
+                for j in points_nextlevel_temp:
+                    # create hash from j and compare with points_nextlevel_all
+                    # if new, add to points_nextlevel
+                    foursquare_request = foursquare_request + 1
                     points_nextlevel.append(j)
-        # TODO decide whether points go to points_done
-        points_done.extend(points_thislevel)
-        points_thislevel.extend(points_nextlevel)
-        l=l+1
+            points_nextlevel_all.extend(points_nextlevel) # current snapshot for double check
+        for i in points_nextlevel:
+            if Point(i).within(area):
+                points_done.append(i)
+        points_thislevel = points_nextlevel # add points for next run
+        p=p+1
+        radius = (radius/2)*math.sqrt(3)
+        #time.sleep(1)
 
     m = MultiPoint(points_done)
-    print len(points_done)
+    print foursquare_request
     print m
     
 
-def draw_hexagon(center, radius):
+def draw_hexagon(center, radius, shift):
     points = []
     point2 = Point((center.x+radius), center.y)
     line = LineString([(center.x, center.y), (point2.x, point2.y)])
-    for i in [0,60,120,180,240,300]:
+    degrees = numpy.array([0,60,120,180,240,300])
+    if shift==True:
+        degrees = degrees + 30
+    for i in degrees:
         templine = affinity.rotate(line, i, center)
         points.append(templine.coords[1])
+    points.append(center)
     return points
 
-def check_doubles(point, list):
-    print "returns true or false"
+def check_unique(point, pointlist):
+    unique = True
+    for i in pointlist:
+        if Point(point).almost_equals(Point(i),4):
+            unique = False
+    return unique
+
 
 def farthest_distance(point):
     print "returns distance of farthest result"
