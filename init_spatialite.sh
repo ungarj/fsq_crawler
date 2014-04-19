@@ -19,6 +19,15 @@ timestamp TEXT,
 request_id TEXT,
 herenow INTEGER);'
 
+spatialite venues.sqlite 'CREATE TABLE fsq_request_points (
+PK_UID INTEGER PRIMARY KEY AUTOINCREMENT,
+returned_venues INTEGER,
+new_venues INTEGER,
+next_iteration TEXT,
+level INTEGER,
+maximum_distance REAL, 
+Geometry BLOB NOT NULL);'
+
 #spatialite venues.sqlite "SELECT addGeometryColumn('fsq_venues', 'geom', 4326, 'POINT', 2);"
 
 #INSERT INTO fsq_venues (fsq_id, geom, name, CategoryName, CategoryParents, Address, city, lat, lon, state, postalCode, checkinsCount, usersCount, verified)

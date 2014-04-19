@@ -31,10 +31,13 @@ def main(args):
     with open(parsed.coords, "r") as f:
         coords = json.load(f)
 
-    for point in coords['request_points']:
-        request_lat = point['lat']
-        request_lon = point['lon']
-
+    #for point in coords['request_points']:
+    #    request_lat = point['lat']
+    #    request_lon = point['lon']
+    for point in coords['coordinates']:
+        request_lat = str(point[0])
+        request_lon = str(point[1])
+     
         print "checking point %s %s" %(request_lat, request_lon)
 
         # generate timestamp and request_id
