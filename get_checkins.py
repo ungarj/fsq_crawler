@@ -105,8 +105,8 @@ def main(args):
                 except:
                     print "insert error"
 
-            except:
-                "server error"
+        except:
+            print "server error"
 
             #print "\n"
     
