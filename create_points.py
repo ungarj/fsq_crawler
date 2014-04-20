@@ -113,7 +113,11 @@ def main(args):
                         if Point(j).within(area):
                             request_lon = str(j[1])
                             request_lat = str(j[0])
-                            venue_list = client.venues.search(params={'ll' : request_lon+','+request_lat})
+                            try:
+                                venue_list = client.venues.search(params={'ll' : request_lon+','+request_lat})
+                            except:
+                                time.sleep(600)
+                                venue_list = client.venues.search(params={'ll' : request_lon+','+request_lat})
                             foursquare_request = foursquare_request + 1
                             venue_list_length = len(venue_list['venues'])
                             print "request returned %s venues" %(venue_list_length)
@@ -133,15 +137,20 @@ def main(args):
                                     dist.append(Point(j).distance(Point(lon, lat)))
                                     if venue['id'] not in crawled_venues:
                                         new_venues = new_venues + 1
-                                        next_iteration=True
-                                        #if venue['stats']['checkinsCount']>4:
-                                        #    venues_relevant_length = venues_relevant_length +1
-                                        #    crawled_venues.add(venue['id'])
+                                        if venue['stats']['checkinsCount']>4:
+                                            venues_relevant_length = venues_relevant_length +1
+                                            crawled_venues.add(venue['id'])
+                                            print "new venue"
+                                            next_iteration=True
+                                    else:
+                                        print "old venue"
                                 maximum_distance = max(dist)
                                 #if venues_relevant_length>0:
                                 #    next_iteration=True
-                                if maximum_distance<next_radius:
-                                    next_iteration=True
+
+                                #if maximum_distance<next_radius:
+                                #    next_iteration=True
+
                                 #else:
                                 #    next_iteration=False
                                 #next_iteration=True
@@ -168,6 +177,7 @@ def main(args):
                         print "new venues: %s" %(new_venues)
                         print "maximum distance: %s" %(maximum_distance)
                         print "next iteration %s" %(next_iteration)
+                        print "venues crawled %s" %(len(crawled_venues))
                         print "----------------"
                     h=""
             start_point = False
