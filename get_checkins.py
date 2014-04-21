@@ -7,6 +7,8 @@ import sys
 import argparse
 import json
 from datetime import datetime
+import multiprocessing
+import time
 
 def main(args):
 
@@ -112,4 +114,8 @@ def main(args):
     
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    crawler = multiprocessing.Process(target=main, args=(sys.argv[1:],))
+    #main(sys.argv[1:])
+    crawler.start()
+    time.sleep(3540) # terminate after 59 minutes
+    crawler.terminate()
