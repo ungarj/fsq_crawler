@@ -9,6 +9,7 @@ import json
 from datetime import datetime
 import multiprocessing
 import time
+import random
 
 def main(args):
 
@@ -36,7 +37,13 @@ def main(args):
     #for point in coords['request_points']:
     #    request_lat = point['lat']
     #    request_lon = point['lon']
-    for point in coords['coordinates']:
+
+    random_r = list(range(len(coords['coordinates'])))
+    random.shuffle(random_r)
+
+    for r in random_r:
+    #for point in coords_random['coordinates']:
+        point = coords['coordinates'][r]
         request_lat = str(point[0])
         request_lon = str(point[1])
      
