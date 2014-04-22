@@ -41,13 +41,13 @@ def main(args):
     random_r = list(range(len(coords['coordinates'])))
     random.shuffle(random_r)
 
-    for r in random_r:
+    for index, r in enumerate(random_r):
     #for point in coords_random['coordinates']:
         point = coords['coordinates'][r]
         request_lat = str(point[0])
         request_lon = str(point[1])
      
-        print "checking point %s %s" %(request_lat, request_lon)
+        print "checking point %s of %s (%s %s)" %(index, len(coords['coordinates']), request_lat, request_lon)
 
         # generate timestamp and request_id
         request_id = datetime.now().strftime("%Y-%m-%dT%H:00")
